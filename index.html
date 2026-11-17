@@ -175,6 +175,11 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(2deg); } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 .hidden { display: none; }
+.evos { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.evo { text-align: center; font-size: .62rem; font-weight: 800; color: var(--muted); border-radius: 12px; padding: 3px 0; }
+.evo.cur { background: var(--sel); outline: 2.5px solid var(--purple); }
+.evo-svg { width: 100%; max-width: 44px; aspect-ratio: 1; display: block; margin: 0 auto 2px; }
+.evo.locked .evo-svg { filter: brightness(0); opacity: .18; }
 </style>
 </head>
 <body>
@@ -254,18 +259,85 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
     var p = (window.PRIMERS || {})[key]; if (!p) return "";
     return "<h3>💡 Primer: " + esc(p.title) + "</h3><ul>" + p.points.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ul>";
   }
-  function bot(mood) {
-    var mouth = mood === "sad" ? "M38 64 Q50 55 62 64" : mood === "wow" ? "M44 58 Q50 70 56 58 Z" : "M37 57 Q50 69 63 57";
-    var eyes = mood === "happy"
-      ? '<path d="M34 46 Q40 39 46 46" stroke="#1f2147" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M54 46 Q60 39 66 46" stroke="#1f2147" stroke-width="4" fill="none" stroke-linecap="round"/>'
-      : '<circle cx="40" cy="45" r="5.5" fill="#1f2147"/><circle cx="60" cy="45" r="5.5" fill="#1f2147"/><circle cx="42" cy="43" r="1.8" fill="#fff"/><circle cx="62" cy="43" r="1.8" fill="#fff"/>';
-    return '<svg class="bot" viewBox="0 0 100 100" aria-hidden="true">' +
-      '<line x1="50" y1="6" x2="50" y2="20" stroke="#1f2147" stroke-width="4"/><circle cx="50" cy="7" r="6" fill="#ff8fb1" stroke="#1f2147" stroke-width="3"/>' +
-      '<rect x="6" y="40" width="10" height="20" rx="5" fill="#7c5cff" stroke="#1f2147" stroke-width="3"/><rect x="84" y="40" width="10" height="20" rx="5" fill="#7c5cff" stroke="#1f2147" stroke-width="3"/>' +
-      '<rect x="13" y="19" width="74" height="66" rx="24" fill="#ffd23f" stroke="#1f2147" stroke-width="4"/>' +
-      '<rect x="23" y="29" width="54" height="44" rx="16" fill="#e9f5ff" stroke="#1f2147" stroke-width="3"/>' + eyes +
-      '<circle cx="30" cy="58" r="4" fill="#ff8fb1" opacity=".8"/><circle cx="70" cy="58" r="4" fill="#ff8fb1" opacity=".8"/>' +
-      '<path d="' + mouth + '" stroke="#1f2147" stroke-width="4" fill="' + (mood === "wow" ? "#ff5a5f" : "none") + '" stroke-linecap="round"/></svg>';
+  // ---------- avatars: one form per level ----------
+  // Each body is drawn without a face; the shared face() adds eyes and mouth for the mood.
+  var K = 'stroke="#1f2147" stroke-width="3.5" stroke-linejoin="round"';
+  var AVATARS = [
+    { name: "Bolt the Robot", face: [50, 45, 10, 58, 12],
+      body: '<line x1="50" y1="6" x2="50" y2="20" stroke="#1f2147" stroke-width="4"/><circle cx="50" cy="7" r="6" fill="#ff8fb1" ' + K + '/>' +
+        '<rect x="6" y="40" width="10" height="20" rx="5" fill="#7c5cff" ' + K + '/><rect x="84" y="40" width="10" height="20" rx="5" fill="#7c5cff" ' + K + '/>' +
+        '<rect x="13" y="19" width="74" height="66" rx="24" fill="#ffd23f" ' + K + '/><rect x="23" y="29" width="54" height="44" rx="16" fill="#e9f5ff" ' + K + '/>' +
+        '<circle cx="30" cy="58" r="4" fill="#ff8fb1" opacity=".8"/><circle cx="70" cy="58" r="4" fill="#ff8fb1" opacity=".8"/>' },
+    { name: "Yuzu the Capybara", face: [50, 42, 16, 73, 8],
+      body: '<ellipse cx="25" cy="27" rx="8" ry="7" fill="#8a5a33" ' + K + '/><ellipse cx="75" cy="27" rx="8" ry="7" fill="#8a5a33" ' + K + '/>' +
+        '<rect x="12" y="22" width="76" height="68" rx="30" fill="#b9875a" ' + K + '/>' +
+        '<rect x="26" y="52" width="48" height="32" rx="16" fill="#d8ad80" ' + K + '/>' +
+        '<ellipse cx="42" cy="61" rx="3.5" ry="2.5" fill="#1f2147"/><ellipse cx="58" cy="61" rx="3.5" ry="2.5" fill="#1f2147"/>' +
+        '<circle cx="50" cy="16" r="9" fill="#ffb32b" ' + K + '/><path d="M51 7 q6 -7 11 -3 q-4 6 -11 3z" fill="#3ccf6e" stroke="#1f2147" stroke-width="2"/>' +
+        '<circle cx="24" cy="52" r="4" fill="#ff8fb1" opacity=".6"/><circle cx="76" cy="52" r="4" fill="#ff8fb1" opacity=".6"/>' },
+    { name: "Pixel the Fox", face: [50, 50, 14, 76, 9],
+      body: '<path d="M18 44 L24 6 L48 28 Z" fill="#ff8c42" ' + K + '/><path d="M82 44 L76 6 L52 28 Z" fill="#ff8c42" ' + K + '/>' +
+        '<path d="M25 32 L27 16 L38 27 Z" fill="#fff3e6"/><path d="M75 32 L73 16 L62 27 Z" fill="#fff3e6"/>' +
+        '<circle cx="50" cy="56" r="35" fill="#ff8c42" ' + K + '/>' +
+        '<ellipse cx="50" cy="74" rx="23" ry="15" fill="#fff3e6" ' + K + '/><ellipse cx="50" cy="65" rx="5" ry="3.5" fill="#1f2147"/>' },
+    { name: "Merlin the Wizard", face: [50, 58, 9, 76, 9],
+      body: '<circle cx="50" cy="61" r="23" fill="#ffd7b5" ' + K + '/>' +
+        '<path d="M27 64 Q34 72 50 70 Q66 72 73 64 Q76 97 50 98 Q24 97 27 64 Z" fill="#ffffff" ' + K + '/>' +
+        '<path d="M18 46 L57 1 L82 46 Z" fill="#7c5cff" ' + K + '/><ellipse cx="50" cy="46" rx="36" ry="7" fill="#6a4be0" ' + K + '/>' +
+        '<path d="M56 18 l2.6 5.2 5.7 .8 -4.1 4 1 5.7 -5.2 -2.7 -5.2 2.7 1 -5.7 -4.1 -4 5.7 -.8z" fill="#ffd23f" stroke="#1f2147" stroke-width="2"/>' +
+        '<circle cx="36" cy="64" r="3.5" fill="#ff8fb1" opacity=".7"/><circle cx="64" cy="64" r="3.5" fill="#ff8fb1" opacity=".7"/>' },
+    { name: "Shadow the Ninja", face: [50, 49, 12, 72, 9, "#1f2147", "#9aa0d0"],
+      body: '<path d="M83 40 q12 -6 14 -16 M83 46 q13 1 15 11" stroke="#ff5a5f" stroke-width="5" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="50" cy="52" r="37" fill="#2d2f4a" ' + K + '/>' +
+        '<rect x="15" y="28" width="70" height="8" rx="4" fill="#ff5a5f" stroke="#1f2147" stroke-width="2.5"/>' +
+        '<rect x="20" y="39" width="60" height="20" rx="10" fill="#ffd7b5" ' + K + '/>' },
+    { name: "Nova the Astronaut", face: [50, 49, 11, 60, 10, "#ffffff", "#ffffff"],
+      body: '<rect x="5" y="42" width="10" height="20" rx="4" fill="#ff9f1c" ' + K + '/><rect x="85" y="42" width="10" height="20" rx="4" fill="#ff9f1c" ' + K + '/>' +
+        '<circle cx="50" cy="52" r="38" fill="#f4f6ff" ' + K + '/>' +
+        '<rect x="21" y="29" width="58" height="44" rx="20" fill="#2b3a8f" ' + K + '/>' +
+        '<path d="M29 39 q6 -5 13 -5" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>' +
+        '<circle cx="50" cy="84" r="3" fill="#ff5a5f"/>' },
+    { name: "Ember the Dragon", face: [50, 46, 15, 79, 10],
+      body: '<path d="M28 34 L16 4 L42 25 Z" fill="#fff3c4" ' + K + '/><path d="M72 34 L84 4 L58 25 Z" fill="#fff3c4" ' + K + '/>' +
+        '<path d="M38 24 L44 9 L50 22 L56 9 L62 24 Z" fill="#ff5a5f" ' + K + '/>' +
+        '<rect x="12" y="20" width="76" height="66" rx="30" fill="#3ccf6e" ' + K + '/>' +
+        '<ellipse cx="50" cy="74" rx="27" ry="15" fill="#8ee8a8" ' + K + '/>' +
+        '<circle cx="41" cy="69" r="2.8" fill="#1f2147"/><circle cx="59" cy="69" r="2.8" fill="#1f2147"/>' +
+        '<path d="M14 52 l-8 -4 M14 60 l-9 1" stroke="#1f2147" stroke-width="3" stroke-linecap="round"/>' },
+    { name: "Stardust the Unicorn", face: [56, 48, 12, 79, 8],
+      body: '<path d="M70 28 L80 6 L86 32 Z" fill="#ffffff" ' + K + '/>' +
+        '<rect x="22" y="22" width="66" height="66" rx="30" fill="#ffffff" ' + K + '/>' +
+        '<path d="M50 25 L56 0 L62 25 Z" fill="#ffd23f" ' + K + '/><path d="M52 18 L60 15 M53 11 L59 9" stroke="#1f2147" stroke-width="2"/>' +
+        '<path d="M34 16 Q8 26 14 58 Q18 76 10 90 Q32 82 30 60 Q28 40 40 24 Z" fill="#ff8fb1" ' + K + '/>' +
+        '<path d="M42 18 Q24 34 28 56 Q31 70 25 82 Q40 72 38 54 Q37 36 48 24 Z" fill="#a78bfa" ' + K + '/>' +
+        '<ellipse cx="58" cy="74" rx="21" ry="12" fill="#ffe3ef" ' + K + '/>' +
+        '<circle cx="51" cy="72" r="2.3" fill="#1f2147"/><circle cx="65" cy="72" r="2.3" fill="#1f2147"/>' }
+  ];
+  function formIndex(lv) { return Math.min(lv, AVATARS.length) - 1; }
+  function face(f, mood) {
+    var cx = f[0], ey = f[1], dx = f[2], my = f[3], mw = f[4], ec = f[5] || "#1f2147", mc = f[6] || "#1f2147";
+    var eyes = "";
+    [cx - dx, cx + dx].forEach(function (x) {
+      eyes += mood === "happy"
+        ? '<path d="M' + (x - 6) + " " + (ey + 1) + " Q" + x + " " + (ey - 7) + " " + (x + 6) + " " + (ey + 1) + '" stroke="' + ec + '" stroke-width="4" fill="none" stroke-linecap="round"/>'
+        : '<circle cx="' + x + '" cy="' + ey + '" r="5.5" fill="' + ec + '"/><circle cx="' + (x + 2) + '" cy="' + (ey - 2) + '" r="1.8" fill="' + (ec === "#ffffff" ? "#2b3a8f" : "#fff") + '"/>';
+    });
+    var mouth = mood === "sad" ? "M" + (cx - mw) + " " + (my + 4) + " Q" + cx + " " + (my - 5) + " " + (cx + mw) + " " + (my + 4)
+      : mood === "wow" ? "M" + (cx - 5) + " " + my + " Q" + cx + " " + (my + 12) + " " + (cx + 5) + " " + my + " Z"
+      : "M" + (cx - mw) + " " + my + " Q" + cx + " " + (my + 11) + " " + (cx + mw) + " " + my;
+    return eyes + '<path d="' + mouth + '" stroke="' + mc + '" stroke-width="4" fill="' + (mood === "wow" ? "#ff5a5f" : "none") + '" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  // bot(mood) draws the player's current form; pass lv to draw a specific one.
+  function bot(mood, lv, cls) {
+    var a = AVATARS[formIndex(lv || level(S.game.xp))];
+    return '<svg class="' + (cls || "bot") + '" viewBox="-2 -2 104 104" aria-hidden="true">' + a.body + face(a.face, mood) + "</svg>";
+  }
+  function evolutions(lv) {
+    return '<div class="evos">' + AVATARS.map(function (a, k) {
+      var got = lv >= k + 1;
+      return '<div class="evo' + (got ? "" : " locked") + (formIndex(lv) === k ? " cur" : "") + '" title="' + esc(a.name) + '">' +
+        bot("happy", k + 1, "evo-svg") + "<span>" + (got ? "Lv " + (k + 1) : "🔒 " + (k + 1)) + "</span></div>";
+    }).join("") + "</div>";
   }
   function confetti(n) {
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -321,22 +393,25 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
     var p = pool(), lv = level(g.xp), into = g.xp % XP_PER_LEVEL;
     var totLearned = list.filter(function (q) { return learned(S.ans[q.id]); }).length;
 
+    screen = "home";
     var h = '<div class="hero">' + bot("happy") + '<div class="bubble">' + esc(pick(SAY.home)) + "</div></div>" +
-      '<h1 class="title">CERT QUEST</h1>';
+      '<h1 class="title">CERT QUEST</h1>' + (SYNC.token ? '<p class="muted" style="margin-top:-4px">' + syncStatusText() + "</p>" : "");
 
     h += '<div class="card"><div class="lvl"><div class="badge"><div><small>LVL</small><b>' + lv + "</b></div></div>" +
-      '<div style="flex:1"><div class="display" style="font-size:1.1rem">' + esc(rank(lv)) + "</div>" +
+      '<div style="flex:1"><div class="display" style="font-size:1.1rem">' + esc(rank(lv)) + ' <span class="muted">· ' + esc(AVATARS[formIndex(lv)].name) + "</span></div>" +
       '<div class="xpbar"><i style="width:' + into + '%"></i></div><div class="muted">' + into + " / " + XP_PER_LEVEL + " XP to level " + (lv + 1) + "</div></div></div>" +
       '<div class="stats"><div class="stat"><b>🔥 ' + liveStreak() + "</b><span>day streak</span></div>" +
       '<div class="stat"><b>⭐ ' + totLearned + "</b><span>learned of " + list.length + "</span></div>" +
-      '<div class="stat"><b>⚡ ' + g.bestCombo + "</b><span>best combo</span></div></div></div>";
+      '<div class="stat"><b>⚡ ' + g.bestCombo + "</b><span>best combo</span></div></div>" +
+      '<div class="sub" style="margin-bottom:6px">🥚 Evolutions' + (lv < AVATARS.length ? ' <span class="muted">· next form at level ' + (lv + 1) + "</span>" : "") + "</div>" +
+      evolutions(lv) + "</div>";
 
     if (S.session) {
       h += '<div class="card"><h2>⏸️ Quest paused</h2><p>Question ' + (S.session.i + 1) + " of " + S.session.items.length + ".</p>" +
         '<button class="btn green" data-act="resume">Resume quest</button><button class="btn ghost" data-act="discard">Abandon it</button></div>';
     }
 
-    h += '<div class="card"><h2>🗺️ Pick your worlds</h2><div class="chips" style="margin-bottom:12px"><button class="chip' + (c.domains.length ? "" : " on") + '" data-dom="">🌍 All worlds</button></div><div class="worlds">';
+    h += '<div class="card"><h2>🗺️ Pick your topic</h2><div class="chips" style="margin-bottom:12px"><button class="chip' + (c.domains.length ? "" : " on") + '" data-dom="">🌍 All topics</button></div><div class="worlds">';
     doms.forEach(function (d) {
       var qs = list.filter(function (q) { return q.domain === d; });
       var l = qs.filter(function (q) { return learned(S.ans[q.id]); }).length;
@@ -346,7 +421,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
     });
     h += "</div></div>";
 
-    h += '<div class="card"><h2>🎯 Quest setup</h2>' +
+    h += '<div class="card"><h2>🎛️ Session settings</h2>' +
       '<div class="sub">Length</div><div class="chips">' +
       ["10", "20", "53", "all"].map(function (n) { return chip("count", n, n === "all" ? "All" : n === "53" ? "53 (full exam)" : n); }).join("") + "</div>" +
       '<div class="sub">Questions</div><div class="chips">' +
@@ -366,7 +441,8 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
       sw("practice", "Practice bank (" + countSrc("practice") + ")") +
       (c.exam === "developer-foundations" ? sw("ccdv", "CCDV practice sets I–VI (" + countSrc("ccdv") + ")") : "") +
       sw("mock", "Mock exams 1–3 (" + countSrc("mock") + "), keep for checkpoints") +
-      '<div class="sub">Save data</div><p class="muted">Saved in this browser only. Export to move it to another device.</p>' +
+      syncHtml() +
+      '<div class="sub">Save data</div><p class="muted">Always saved in this browser. Export/Import is a manual backup.</p>' +
       '<div class="tools"><button class="link" data-act="export">Export</button><button class="link" data-act="import">Import</button>' +
       '<button class="link" data-act="reset">Reset everything</button></div></details>';
 
@@ -418,6 +494,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
   }
 
   function question() {
+    screen = "quiz";
     var s = S.session, it = s.items[s.i], q = BY_ID[it.id];
     if (!q) { s.i++; return s.i < s.items.length ? question() : results(); }
     var need = q.correct.length, L = "ABCDEFGH";
@@ -453,7 +530,8 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
     } else {
       var ok = isRight(q, it), mood = ok ? (it.guess ? "wow" : "happy") : "sad";
       h += '<div class="sheet ' + (ok ? "ok" : "bad") + '"><div>' +
-        (it.levelUp ? '<div class="lvlup">🎉 LEVEL UP! You are now a ' + esc(rank(level(S.game.xp))) + "</div>" : "") +
+        (it.levelUp ? '<div class="lvlup">🎉 LEVEL UP! Level ' + level(S.game.xp) + " · " + esc(rank(level(S.game.xp))) +
+          (level(S.game.xp) <= AVATARS.length ? "<br>New form unlocked: " + esc(AVATARS[formIndex(level(S.game.xp))].name) + "!" : "") + "</div>" : "") +
         '<div class="head">' + bot(mood) + '<div class="verdict">' + esc(it.say || "") + "</div>" + (it.xp ? '<span class="xp">+' + it.xp + " XP</span>" : "") + "</div>" +
         ((S.cfg.reasoning || it.showWhy)
           ? "<p>" + esc(q.why) + "</p>" + (q.shuffle ? "" : '<p class="muted">Letters in the explanation match the options as shown.</p>')
@@ -488,12 +566,13 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
     if (g.lastDay !== today) { g.dayStreak = g.lastDay === yesterday() ? g.dayStreak + 1 : 1; g.lastDay = today; }
     it.say = ok ? (it.guess ? pick(SAY.guess) : (s.combo >= 3 ? "Combo x" + s.combo + "! 🔥" : pick(SAY.ok))) : pick(SAY.bad);
 
-    save(); question();
+    save(); question(); schedulePush();
     if (ok) confetti(it.levelUp ? 90 : it.guess ? 12 : 30);
     else if (it.levelUp) confetti(90);
   }
 
   function results() {
+    screen = "results";
     var s = S.session, rows = {}, right = 0, guesses = 0, missed = [];
     s.items.forEach(function (it) {
       var q = BY_ID[it.id]; if (!q || !it.done) return;
@@ -515,7 +594,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
       '<div class="big">' + right + " / " + n + '</div><p class="muted">' + pct + "% correct · " + guesses + " guess" + (guesses === 1 ? "" : "es") + " · pass pace is 72%</p>" +
       '<div class="stats"><div class="stat"><b>+' + xp + '</b><span>XP earned</span></div><div class="stat"><b>⚡ ' + best + '</b><span>best combo</span></div>' +
       '<div class="stat"><b>🔥 ' + liveStreak() + "</b><span>day streak</span></div></div></div>";
-    h += '<div class="card"><h2>🗺️ By world</h2>';
+    h += '<div class="card"><h2>🗺️ By topic</h2>';
     Object.keys(rows).sort().forEach(function (d) {
       var r = rows[d];
       h += '<div class="drow"><div class="t"><span>' + emojiFor(d) + " " + esc(d) + "</span><span>" + r.ok + "/" + r.n + "</span></div>" +
@@ -540,19 +619,107 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
   document.getElementById("importFile").addEventListener("change", function (e) {
     var f = e.target.files[0]; if (!f) return;
     f.text().then(function (t) {
-      var data = JSON.parse(t), added = 0;
-      Object.keys(data.ans || {}).forEach(function (id) {
-        var mine = S.ans[id], theirs = data.ans[id];
-        if (!mine || (theirs.ts || 0) > (mine.ts || 0)) { S.ans[id] = theirs; added++; }
-      });
-      if (data.game) {
-        var g = S.game, o = data.game;
-        g.xp = Math.max(g.xp, o.xp || 0); g.bestCombo = Math.max(g.bestCombo, o.bestCombo || 0);
-        if ((o.dayStreak || 0) > g.dayStreak) { g.dayStreak = o.dayStreak; g.lastDay = o.lastDay; }
-      }
-      save(); alert("Imported " + added + " question records."); home();
+      var added = mergeIn(JSON.parse(t));
+      save(); schedulePush(); alert("Imported " + added + " question records."); home();
     }).catch(function () { alert("That file could not be read."); });
     e.target.value = "";
+  });
+
+  // Merge another copy of progress into this one: per question, the newer answer wins.
+  function mergeIn(data) {
+    var added = 0;
+    Object.keys(data.ans || {}).forEach(function (id) {
+      var mine = S.ans[id], theirs = data.ans[id];
+      if (!mine || (theirs.ts || 0) > (mine.ts || 0)) { S.ans[id] = theirs; added++; }
+    });
+    if (data.game) {
+      var g = S.game, o = data.game;
+      g.xp = Math.max(g.xp, o.xp || 0); g.bestCombo = Math.max(g.bestCombo, o.bestCombo || 0);
+      if (o.lastDay && (o.lastDay === g.lastDay ? (o.dayStreak || 0) > g.dayStreak : dayNum(o.lastDay) > dayNum(g.lastDay))) {
+        g.dayStreak = o.dayStreak || 0; g.lastDay = o.lastDay;
+      }
+    }
+    return added;
+  }
+  function dayNum(s) { if (!s) return 0; var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]).getTime(); }
+
+  // ---------- cloud sync (private GitHub Gist) ----------
+  // The token lives only in this browser's storage, under its own key, and is never exported.
+  var GIST_FILE = "cert-quest-progress.json";
+  var SYNC = { token: lsGet("cert-quest-token"), gist: lsGet("cert-quest-gist"), last: lsGet("cert-quest-synced"), msg: "", busy: false };
+  var screen = "home", pushTimer = null;
+  function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+  function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+  function gh(method, path, body) {
+    return fetch("https://api.github.com" + path, {
+      method: method,
+      headers: { "Authorization": "Bearer " + SYNC.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      body: body ? JSON.stringify(body) : undefined,
+      keepalive: method === "PATCH"
+    }).then(function (r) {
+      if (r.status === 401) throw new Error("GitHub rejected the token. Check it hasn't expired.");
+      if (r.status === 403 || r.status === 404) throw new Error("The token can't access Gists. Make sure the 'gist' box was checked.");
+      if (!r.ok) throw new Error("GitHub error " + r.status);
+      return r.json();
+    });
+  }
+  function payload() { return JSON.stringify({ app: KEY, updated: new Date().toISOString(), ans: S.ans, game: S.game }); }
+  function findOrCreateGist() {
+    if (SYNC.gist) return Promise.resolve(SYNC.gist);
+    return gh("GET", "/gists?per_page=100").then(function (list) {
+      var hit = list.filter(function (g) { return g.files && g.files[GIST_FILE]; })[0];
+      if (hit) return hit.id;
+      return gh("POST", "/gists", { description: "Cert Quest progress (private, synced by the quiz app)", public: false, files: (function () { var f = {}; f[GIST_FILE] = { content: payload() }; return f; })() })
+        .then(function (g) { return g.id; });
+    }).then(function (id) { SYNC.gist = id; lsSet("cert-quest-gist", id); return id; });
+  }
+  function pull() {
+    return gh("GET", "/gists/" + SYNC.gist).then(function (g) {
+      var f = g.files && g.files[GIST_FILE];
+      if (!f) return;
+      var p = f.truncated ? fetch(f.raw_url).then(function (r) { return r.text(); }) : Promise.resolve(f.content);
+      return p.then(function (txt) { try { mergeIn(JSON.parse(txt)); save(); } catch (e) {} });
+    });
+  }
+  function push() {
+    var files = {}; files[GIST_FILE] = { content: payload() };
+    return gh("PATCH", "/gists/" + SYNC.gist, { files: files });
+  }
+  function syncNow(opts) {
+    if (!SYNC.token || SYNC.busy) return Promise.resolve();
+    SYNC.busy = true; SYNC.msg = "Syncing…"; refreshIfHome();
+    return findOrCreateGist().then(function () { return opts && opts.pushOnly ? null : pull(); }).then(push).then(function () {
+      SYNC.last = new Date().toISOString(); lsSet("cert-quest-synced", SYNC.last); SYNC.msg = "";
+    }).catch(function (err) {
+      SYNC.msg = "⚠️ " + (err && err.message ? err.message : "Sync failed. Check your connection.");
+    }).then(function () { SYNC.busy = false; refreshIfHome(); });
+  }
+  function schedulePush() {
+    if (!SYNC.token) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () { syncNow({ pushOnly: true }); }, 2500);
+  }
+  function refreshIfHome() { if (screen === "home") keepScroll(home); }
+  function syncStatusText() {
+    if (SYNC.msg) return esc(SYNC.msg);
+    if (!SYNC.last) return "☁️ Cloud sync on";
+    var d = new Date(SYNC.last);
+    return "☁️ Synced " + d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  function syncHtml() {
+    var h = '<div class="sub">☁️ Cloud sync</div>';
+    if (!SYNC.token) {
+      return h + '<p class="muted">Paste a GitHub token that has only the <b>gist</b> permission. Your progress is saved to a private Gist so every device with the token shares it.</p>' +
+        '<input id="tok" type="password" autocomplete="off" placeholder="ghp_…" style="width:100%;font:inherit;padding:11px;border-radius:14px;border:3px solid var(--ink);background:var(--card);color:var(--text);margin-bottom:10px">' +
+        '<button class="btn purple" data-act="connect">Connect</button>';
+    }
+    return h + '<p>' + syncStatusText() + '</p><div class="tools"><button class="link" data-act="syncnow">Sync now</button>' +
+      '<button class="link" data-act="disconnect">Disconnect this device</button></div>';
+  }
+  // Push when the app goes to the background (phone switch, tab close) so nothing is lost.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden" && pushTimer) { clearTimeout(pushTimer); pushTimer = null; if (SYNC.gist) push().catch(function () {}); }
+    if (document.visibilityState === "visible" && SYNC.token) syncNow();
   });
 
   // ---------- events ----------
@@ -595,6 +762,18 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
         return;
       case "retry": return start(S.lastMissed);
       case "home": home(); return window.scrollTo(0, 0);
+      case "connect":
+        var tok = (document.getElementById("tok") || {}).value || "";
+        tok = tok.trim();
+        if (!tok) { alert("Paste your GitHub token first."); return; }
+        SYNC.token = tok; SYNC.gist = ""; SYNC.msg = ""; lsSet("cert-quest-token", tok); lsSet("cert-quest-gist", "");
+        return syncNow();
+      case "syncnow": return syncNow();
+      case "disconnect":
+        if (!confirm("Stop syncing on this device? Progress stays here and in your Gist; you can reconnect with the token later.")) return;
+        SYNC.token = ""; SYNC.gist = ""; SYNC.last = ""; SYNC.msg = "";
+        lsSet("cert-quest-token", ""); lsSet("cert-quest-gist", ""); lsSet("cert-quest-synced", "");
+        return keepScroll(home);
       case "export": return exportData();
       case "import": return document.getElementById("importFile").click();
       case "reset":
@@ -615,7 +794,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
   }
 
   if (!Q.length) app.innerHTML = '<p>No questions found. Run <code>python quiz/build.py</code> from the repository root.</p>';
-  else home();
+  else { home(); if (SYNC.token) syncNow(); }
 })();
 </script>
 </body>
