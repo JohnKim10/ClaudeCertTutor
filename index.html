@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cert Quiz">
+<meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)">
+<title>Cert Quiz</title>
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1c1c1e; --muted: #6b6b70; --line: #e2e0d9;
+  --accent: #c2410c; --accent-ink: #ffffff; --chip: #efede6;
+  --ok: #15803d; --ok-bg: #e7f6ec; --bad: #b91c1c; --bad-bg: #fdecec; --sel: #fff1e8;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181b; --card: #232327; --ink: #ececee; --muted: #a1a1aa; --line: #34343a;
+    --accent: #fb923c; --accent-ink: #1c1c1e; --chip: #2c2c31;
+    --ok: #4ade80; --ok-bg: #16301f; --bad: #f87171; --bad-bg: #3a1c1c; --sel: #3a2a1e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+main { max-width: 680px; margin: 0 auto; padding: 16px 16px 96px; }
+h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+h2 { font-size: 1.05rem; margin: 24px 0 8px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--muted); font-size: .9rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 12px 0; }
+label.row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+label.row input { width: 20px; height: 20px; accent-color: var(--accent); }
+select { width: 100%; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px; padding: 7px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn { display: block; width: 100%; font: inherit; font-weight: 600; padding: 14px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+.btn + .btn { margin-top: 10px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+.bar > div { max-width: 680px; margin: 0 auto; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.link { background: none; border: 0; color: var(--accent); font: inherit; padding: 6px 0; cursor: pointer; }
+.progress { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 8px 0 14px; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+.tag { display: inline-block; font-size: .78rem; color: var(--muted); background: var(--chip); border-radius: 6px; padding: 2px 8px; margin: 0 6px 6px 0; }
+.scenario { border-left: 3px solid var(--line); padding-left: 12px; color: var(--muted); margin-bottom: 12px; }
+.qtext { font-weight: 600; margin-bottom: 14px; }
+.opt { display: flex; gap: 12px; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 14px; margin: 0 0 10px; cursor: pointer; }
+.opt b { flex: none; width: 1.4em; color: var(--muted); }
+.opt.sel { border-color: var(--accent); background: var(--sel); }
+.opt.right { border-color: var(--ok); background: var(--ok-bg); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.opt:disabled { cursor: default; }
+.verdict { font-weight: 700; margin-bottom: 6px; }
+.verdict.ok { color: var(--ok); } .verdict.bad { color: var(--bad); }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+td, th { padding: 7px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+.meter { height: 6px; background: var(--line); border-radius: 6px; overflow: hidden; margin-top: 4px; }
+.meter > i { display: block; height: 100%; background: var(--ok); }
+.big { font-size: 2.4rem; font-weight: 700; margin: 4px 0; }
+.tools { display: flex; gap: 16px; flex-wrap: wrap; }
+.hidden { display: none; }
+.primer { background: var(--sel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; margin: 0 0 14px; }
+.primer h3 { margin: 0 0 8px; font-size: 1rem; }
+.primer ul { margin: 0; padding-left: 20px; }
+.primer li { margin-bottom: 6px; }
+.primer .link { font-size: .9rem; }
+code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88em; background: var(--chip); border-radius: 4px; padding: 1px 4px; }
+.toggles { display: flex; gap: 8px; margin-bottom: 10px; }
+.toggles .chip { font-size: .8rem; padding: 5px 10px; }
+</style>
+</head>
+<body>
+<main id="app"><p class="muted">Loading…</p></main>
+<input type="file" id="importFile" accept="application/json" class="hidden">
+<script src="questions.js"></script>
+<script>
+(function () {
+  "use strict";
+  var Q = window.QUESTIONS || [];
+  var BY_ID = {}; Q.forEach(function (q) { BY_ID[q.id] = q; });
+  var EXAMS = [
+    ["developer-foundations", "Developer – Foundations"],
+    ["associate-foundations", "Associate – Foundations"],
+    ["architect-foundations", "Architect – Foundations"],
+    ["architect-professional", "Architect – Professional"]
+  ];
+  var KEY = "cert-quiz-v1";
+  var app = document.getElementById("app");
+
+  // ---------- storage ----------
+  function defaults() {
+    return {
+      ans: {},
+      cfg: { exam: "developer-foundations", practice: true, ccdv: true, mock: false,
+             domains: [], filter: "all", count: "20", labels: true,
+             primers: true, reasoning: true, order: "mixed" },
+      session: null
+    };
+  }
+  function load() {
+    var s = defaults();
+    try {
+      var raw = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (raw) { s.ans = raw.ans || {}; Object.assign(s.cfg, raw.cfg || {}); s.session = raw.session || null; }
+    } catch (e) {}
+    return s;
+  }
+  var S = load();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  // ---------- helpers ----------
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function md(t) { return esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function primerHtml(key) {
+    var p = (window.PRIMERS || {})[key]; if (!p) return "";
+    return "<h3>Primer: " + esc(p.title) + "</h3><ul>" + p.points.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ul>";
+  }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function learned(r) { return r && r.last && !r.guess; }
+  function examQs() {
+    var c = S.cfg;
+    return Q.filter(function (q) {
+      return q.exam === c.exam && ((q.src === "practice" && c.practice) || (q.src === "ccdv" && c.ccdv) || (q.src === "mock" && c.mock));
+    });
+  }
+  function domainsOf(list) {
+    var seen = {}, out = [];
+    list.forEach(function (q) { if (!seen[q.domain]) { seen[q.domain] = 1; out.push(q.domain); } });
+    return out.sort();
+  }
+  function pool() {
+    var c = S.cfg;
+    return examQs().filter(function (q) {
+      if (c.domains.length && c.domains.indexOf(q.domain) < 0) return false;
+      var r = S.ans[q.id];
+      if (c.filter === "unseen") return !r;
+      if (c.filter === "review") return r && (!r.last || r.guess);
+      if (c.filter === "notlearned") return !learned(r);
+      return true;
+    });
+  }
+
+  // ---------- home ----------
+  function home() {
+    var c = S.cfg, list = examQs(), doms = domainsOf(list);
+    c.domains = c.domains.filter(function (d) { return doms.indexOf(d) >= 0; });
+    var p = pool();
+    var h = '<h1>Cert Quiz</h1><p class="muted">Practice questions with an explanation after every answer. Progress is saved on this device.</p>';
+
+    if (S.session) {
+      h += '<div class="card"><p><b>Unfinished quiz</b>: question ' + (S.session.i + 1) + ' of ' + S.session.items.length + '.</p>' +
+           '<button class="btn" data-act="resume">Resume</button><button class="btn ghost" data-act="discard">Discard it</button></div>';
+    }
+
+    h += '<div class="card"><h2 style="margin-top:0">Exam</h2><select id="exam">' +
+      EXAMS.map(function (e) { return '<option value="' + e[0] + '"' + (e[0] === c.exam ? " selected" : "") + ">" + e[1] + "</option>"; }).join("") +
+      "</select>";
+
+    h += '<h2>Sources</h2>' +
+      chk("practice", "Practice bank", countSrc("practice")) +
+      (c.exam === "developer-foundations" ? chk("ccdv", "CCDV practice sets I–VI (options shuffled)", countSrc("ccdv")) : "") +
+      chk("mock", "Mock exams 1–3 (keep unseen for checkpoints)", countSrc("mock"));
+
+    h += '<h2>Domains</h2><div class="chips"><button class="chip' + (c.domains.length ? "" : " on") + '" data-dom="">All</button>' +
+      doms.map(function (d) { return '<button class="chip' + (c.domains.indexOf(d) >= 0 ? " on" : "") + '" data-dom="' + esc(d) + '">' + esc(d) + "</button>"; }).join("") + "</div>";
+
+    h += '<h2>Questions</h2><div class="chips">' +
+      [["all", "All"], ["unseen", "Unseen"], ["review", "Missed or guessed"], ["notlearned", "Not learned yet"]].map(function (f) {
+        return '<button class="chip' + (c.filter === f[0] ? " on" : "") + '" data-filter="' + f[0] + '">' + f[1] + "</button>"; }).join("") + "</div>";
+
+    h += '<h2>How many</h2><div class="chips">' +
+      ["10", "20", "53", "all"].map(function (n) {
+        return '<button class="chip' + (c.count === n ? " on" : "") + '" data-count="' + n + '">' + (n === "all" ? "All" : n) + "</button>"; }).join("") + "</div>";
+
+    h += '<h2>Options</h2>' +
+      chk("primers", "Primers: short notes before each new topic" + (c.exam === "developer-foundations" ? "" : " (Developer exam only)"), null) +
+      chk("reasoning", "Answer reasoning: show the explanation after each answer", null) +
+      chk("labels", "Show domain / topic label on each question (turn off for exam-style)", null);
+    h += '<h2>Order</h2><div class="chips">' +
+      [["mixed", "Mixed"], ["grouped", "Grouped by topic"]].map(function (o) {
+        return '<button class="chip' + (c.order === o[0] ? " on" : "") + '" data-order="' + o[0] + '">' + o[1] + "</button>"; }).join("") + "</div>";
+    h += '<p class="muted" style="margin-top:12px">' + p.length + " question" + (p.length === 1 ? "" : "s") + " match.</p></div>";
+
+    h += statsHtml(list);
+
+    h += '<div class="card"><h2 style="margin-top:0">Progress data</h2><p class="muted">Saved in this browser only. Export it to move it to another device.</p>' +
+      '<div class="tools"><button class="link" data-act="export">Export</button><button class="link" data-act="import">Import</button>' +
+      '<button class="link" data-act="reset">Reset progress</button></div></div>';
+
+    h += '<div class="bar"><div><button class="btn" data-act="start"' + (p.length ? "" : " disabled") + '>Start ' +
+      Math.min(p.length, c.count === "all" ? p.length : +c.count) + " questions</button></div></div>";
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+
+    function chk(k, label, n) {
+      return '<label class="row"><input type="checkbox" data-cfg="' + k + '"' + (c[k] ? " checked" : "") + "> <span>" + label +
+        (n != null ? ' <span class="muted">(' + n + ")</span>" : "") + "</span></label>";
+    }
+    function countSrc(src) { return Q.filter(function (q) { return q.exam === c.exam && q.src === src; }).length; }
+  }
+
+  function statsHtml(list) {
+    if (!list.length) return "";
+    var rows = {}, tot = { n: 0, seen: 0, learned: 0 };
+    list.forEach(function (q) {
+      var r = rows[q.domain] || (rows[q.domain] = { n: 0, seen: 0, learned: 0 });
+      var a = S.ans[q.id];
+      r.n++; tot.n++;
+      if (a) { r.seen++; tot.seen++; }
+      if (learned(a)) { r.learned++; tot.learned++; }
+    });
+    var h = '<div class="card"><h2 style="margin-top:0">Your progress</h2><p class="muted">Learned = last answer correct and not marked as a guess.</p>' +
+      '<table><tr><th>Domain</th><th class="n">Seen</th><th class="n">Learned</th></tr>';
+    Object.keys(rows).sort().forEach(function (d) {
+      var r = rows[d];
+      h += "<tr><td>" + esc(d) + '<div class="meter"><i style="width:' + Math.round(100 * r.learned / r.n) + '%"></i></div></td>' +
+        '<td class="n">' + r.seen + "/" + r.n + '</td><td class="n">' + r.learned + "</td></tr>";
+    });
+    h += '<tr><th>Total</th><th class="n">' + tot.seen + "/" + tot.n + '</th><th class="n">' + tot.learned + "</th></tr></table></div>";
+    return h;
+  }
+
+  // ---------- quiz ----------
+  function start(ids) {
+    var picked;
+    if (ids) picked = ids.map(function (id) { return BY_ID[id]; }).filter(Boolean);
+    else {
+      var p = shuffle(pool());
+      picked = S.cfg.count === "all" ? p : p.slice(0, +S.cfg.count);
+    }
+    if (!picked.length) return;
+    if (!ids && S.cfg.order === "grouped") {
+      // Keep each topic's questions together (primer once, then its questions); topic order is random.
+      var rank = {}, n = 0;
+      picked.forEach(function (q) { var k = q.primer || q.topic; if (!(k in rank)) rank[k] = n++; });
+      picked = picked.slice().sort(function (a, b) { return rank[a.primer || a.topic] - rank[b.primer || b.topic]; });
+    }
+    S.session = {
+      seenPrimers: {},
+      items: picked.map(function (q) {
+        var idx = q.options.map(function (_, i) { return i; });
+        return { id: q.id, order: q.shuffle ? shuffle(idx) : idx, picked: [], guess: false, done: false };
+      }),
+      i: 0
+    };
+    save(); question();
+  }
+
+  function question() {
+    var s = S.session, it = s.items[s.i], q = BY_ID[it.id];
+    if (!q) { s.i++; return s.i < s.items.length ? question() : results(); }
+    var need = q.correct.length, L = "ABCDEFGH";
+    var h = '<div class="top"><button class="link" data-act="quit">← Quit</button><span class="muted">' + (s.i + 1) + " / " + s.items.length + "</span></div>" +
+      '<div class="progress"><i style="width:' + Math.round(100 * s.i / s.items.length) + '%"></i></div>';
+    h += '<div class="toggles"><button class="chip' + (S.cfg.primers ? " on" : "") + '" data-act="tprimers">Primers ' + (S.cfg.primers ? "on" : "off") + "</button>" +
+      '<button class="chip' + (S.cfg.reasoning ? " on" : "") + '" data-act="treasoning">Reasoning ' + (S.cfg.reasoning ? "on" : "off") + "</button></div>";
+    if (S.cfg.primers && q.primer && window.PRIMERS && window.PRIMERS[q.primer]) {
+      var seen = s.seenPrimers || (s.seenPrimers = {});
+      if (it.primerOpen === undefined) { it.primerOpen = !seen[q.primer]; seen[q.primer] = 1; save(); }
+      h += it.primerOpen
+        ? '<div class="primer">' + primerHtml(q.primer) + '<button class="link" data-act="hideprimer">Hide primer</button></div>'
+        : '<p><button class="link" data-act="showprimer">Show primer: ' + esc(window.PRIMERS[q.primer].title) + "</button></p>";
+    }
+    if (S.cfg.labels) {
+      h += '<span class="tag">' + esc(q.domain) + "</span>" + (q.topic !== q.domain ? '<span class="tag">' + esc(q.topic) + "</span>" : "");
+    }
+    if (need > 1) h += '<span class="tag"><b>Choose ' + need + "</b></span>";
+    if (q.scenario) h += '<div class="scenario">' + esc(q.scenario) + "</div>";
+    h += '<div class="qtext">' + esc(q.q) + "</div>";
+    it.order.forEach(function (oi, pos) {
+      var cls = "opt";
+      if (it.done) {
+        if (q.correct.indexOf(oi) >= 0) cls += " right";
+        else if (it.picked.indexOf(oi) >= 0) cls += " wrong";
+      } else if (it.picked.indexOf(oi) >= 0) cls += " sel";
+      h += '<button class="' + cls + '" data-opt="' + oi + '"' + (it.done ? " disabled" : "") + "><b>" + L[pos] + "</b><span>" + esc(q.options[oi]) + "</span></button>";
+    });
+    if (!it.done) {
+      h += '<label class="row"><input type="checkbox" id="guess"' + (it.guess ? " checked" : "") + "> <span>I'm guessing</span></label>";
+      h += '<div class="bar"><div><button class="btn" data-act="submit"' + (it.picked.length === need ? "" : " disabled") + ">Check answer</button></div></div>";
+    } else {
+      var ok = isRight(q, it);
+      h += '<div class="card"><div class="verdict ' + (ok ? "ok" : "bad") + '">' + (ok ? (it.guess ? "Correct, but it was a guess" : "Correct") : "Not quite") + "</div>" +
+        ((S.cfg.reasoning || it.showWhy)
+          ? "<p>" + esc(q.why) + "</p>" + (q.shuffle ? "" : '<p class="muted">Letters in the explanation match the options as shown.</p>')
+          : '<p><button class="link" data-act="showwhy">Show reasoning</button></p>') +
+        '<p class="muted">' + esc(q.set) + "</p></div>";
+      h += '<div class="bar"><div><button class="btn" data-act="next">' + (s.i + 1 < s.items.length ? "Next question" : "See results") + "</button></div></div>";
+    }
+    app.innerHTML = h;
+  }
+
+  function isRight(q, it) {
+    return it.picked.length === q.correct.length && it.picked.every(function (p) { return q.correct.indexOf(p) >= 0; });
+  }
+
+  function submit() {
+    var it = S.session.items[S.session.i], q = BY_ID[it.id];
+    it.done = true;
+    var ok = isRight(q, it), r = S.ans[q.id] || { seen: 0, right: 0 };
+    r.seen++; if (ok) r.right++;
+    r.last = ok; r.guess = it.guess; r.ts = Date.now();
+    S.ans[q.id] = r;
+    save(); question();
+  }
+
+  function results() {
+    var s = S.session, rows = {}, right = 0, guesses = 0, missed = [];
+    s.items.forEach(function (it) {
+      var q = BY_ID[it.id]; if (!q || !it.done) return;
+      var ok = isRight(q, it), r = rows[q.domain] || (rows[q.domain] = { n: 0, ok: 0 });
+      r.n++; if (ok) { r.ok++; right++; }
+      if (it.guess) guesses++;
+      if (!ok || it.guess) missed.push(it.id);
+    });
+    var n = s.items.filter(function (it) { return it.done; }).length;
+    S.lastMissed = missed; S.session = null; save();
+    var h = '<h1>Results</h1><div class="card"><div class="big">' + right + " / " + n + '</div><p class="muted">' +
+      (n ? Math.round(100 * right / n) : 0) + "% correct · " + guesses + " marked as guesses</p></div>";
+    h += '<div class="card"><table><tr><th>Domain</th><th class="n">Score</th></tr>';
+    Object.keys(rows).sort().forEach(function (d) {
+      var r = rows[d];
+      h += "<tr><td>" + esc(d) + '<div class="meter"><i style="width:' + Math.round(100 * r.ok / r.n) + '%"></i></div></td><td class="n">' + r.ok + "/" + r.n + "</td></tr>";
+    });
+    h += "</table></div>";
+    h += '<div class="bar"><div>' + (missed.length ? '<button class="btn" data-act="retry">Retry ' + missed.length + " missed or guessed</button>" : "") +
+      '<button class="btn ghost" data-act="home">Back to start</button></div></div>';
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- import / export ----------
+  function exportData() {
+    var blob = new Blob([JSON.stringify({ app: KEY, exported: new Date().toISOString(), ans: S.ans }, null, 1)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cert-quiz-progress-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  document.getElementById("importFile").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    f.text().then(function (t) {
+      var data = JSON.parse(t), added = 0;
+      Object.keys(data.ans || {}).forEach(function (id) {
+        var mine = S.ans[id], theirs = data.ans[id];
+        if (!mine || (theirs.ts || 0) > (mine.ts || 0)) { S.ans[id] = theirs; added++; }
+      });
+      save(); alert("Imported " + added + " question records."); home();
+    }).catch(function () { alert("That file could not be read."); });
+    e.target.value = "";
+  });
+
+  // ---------- events ----------
+  app.addEventListener("click", function (e) {
+    var t = e.target.closest("button"); if (!t) return;
+    var c = S.cfg, d = t.dataset;
+    if (d.dom !== undefined) {
+      if (!d.dom) c.domains = [];
+      else { var i = c.domains.indexOf(d.dom); if (i >= 0) c.domains.splice(i, 1); else c.domains.push(d.dom); }
+      save(); return home();
+    }
+    if (d.filter) { c.filter = d.filter; save(); return home(); }
+    if (d.count) { c.count = d.count; save(); return home(); }
+    if (d.order) { c.order = d.order; save(); return home(); }
+    if (d.opt !== undefined) {
+      var it = S.session.items[S.session.i], need = BY_ID[it.id].correct.length, o = +d.opt, k = it.picked.indexOf(o);
+      if (k >= 0) it.picked.splice(k, 1);
+      else if (need === 1) it.picked = [o];
+      else if (it.picked.length < need) it.picked.push(o);
+      save(); return question();
+    }
+    switch (d.act) {
+      case "start": return start();
+      case "resume": return question();
+      case "discard": S.session = null; save(); return home();
+      case "submit": return submit();
+      case "tprimers": c.primers = !c.primers; save(); return question();
+      case "treasoning": c.reasoning = !c.reasoning; save(); return question();
+      case "showprimer": S.session.items[S.session.i].primerOpen = true; save(); return question();
+      case "hideprimer": S.session.items[S.session.i].primerOpen = false; save(); return question();
+      case "showwhy": S.session.items[S.session.i].showWhy = true; save(); return question();
+      case "next":
+        S.session.i++; save();
+        if (S.session.i < S.session.items.length) { question(); window.scrollTo(0, 0); } else results();
+        return;
+      case "quit":
+        if (confirm("Stop this quiz? Answers so far are saved, and you can resume from the start screen.")) home();
+        return;
+      case "retry": return start(S.lastMissed);
+      case "home": return home();
+      case "export": return exportData();
+      case "import": return document.getElementById("importFile").click();
+      case "reset":
+        if (confirm("Erase all saved progress on this device?")) { S.ans = {}; S.session = null; save(); home(); }
+        return;
+    }
+  });
+  app.addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "exam") { S.cfg.exam = t.value; S.cfg.domains = []; save(); return home(); }
+    if (t.id === "guess") { S.session.items[S.session.i].guess = t.checked; save(); return; }
+    if (t.dataset.cfg) { S.cfg[t.dataset.cfg] = t.checked; save(); return home(); }
+  });
+
+  if (!Q.length) app.innerHTML = '<p>No questions found. Run <code>python quiz/build.py</code> from the repository root.</p>';
+  else home();
+})();
+</script>
+</body>
+</html>
