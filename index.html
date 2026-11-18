@@ -138,7 +138,15 @@ details.card[open] > summary { margin-bottom: 10px; }
 .guess.on { background: var(--orange); color: #1f2147; }
 .primer { background: #fff7d6; color: #3b2f00; border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 5px 0 var(--ink); padding: 14px 16px; margin: 0 0 16px; animation: pop .3s; }
 .primer h3 { margin: 0 0 8px; font-size: 1.05rem; }
-.primer ul { margin: 0; padding-left: 20px; }
+.primer ol { margin: 0; padding-left: 22px; }
+.primer .terms { background: #fffdf3; border: 2px dashed #c9a227; border-radius: 12px; padding: 8px 12px; margin: 0 0 12px; font-size: .92rem; }
+.primer .tt { font-family: var(--display); font-weight: 700; margin-bottom: 4px; }
+.primer dl { margin: 0; }
+.primer dl > div { margin: 0 0 5px; }
+.primer dt { display: inline; font-weight: 800; }
+.primer dt::after { content: " — "; font-weight: 600; }
+.primer dd { display: inline; margin: 0; }
+.primer .reflex { margin: 10px 0 4px; padding: 8px 10px; background: #ffe9a3; border: 2px solid #1f2147; border-radius: 12px; }
 .primer li { margin-bottom: 6px; }
 .primer .link { color: #6b4e00; }
 .primer code { background: #ffe9a3; }
@@ -241,7 +249,7 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
 
   // ---------- helpers ----------
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function md(t) { return esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+  function md(t) { return esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*([^*]+)\*/g, "<em>$1</em>"); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function learned(r) { return r && r.last && !r.guess; }
@@ -257,7 +265,12 @@ code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size
   function rank(lv) { return RANKS[Math.min(lv - 1, RANKS.length - 1)]; }
   function primerHtml(key) {
     var p = (window.PRIMERS || {})[key]; if (!p) return "";
-    return "<h3>💡 Primer: " + esc(p.title) + "</h3><ul>" + p.points.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ul>";
+    var terms = (p.terms || []).length
+      ? '<div class="terms"><div class="tt">📖 Key terms</div><dl>' + p.terms.map(function (x) {
+          return "<div><dt>" + md(x[0]) + "</dt><dd>" + md(x[1]) + "</dd></div>"; }).join("") + "</dl></div>"
+      : "";
+    return "<h3>💡 Primer: " + esc(p.title) + "</h3>" + terms + "<ol>" + p.points.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</ol>" +
+      (p.reflex ? '<p class="reflex">🎯 <b>Exam reflex:</b> ' + md(p.reflex) + "</p>" : "");
   }
   // ---------- avatars: one form per level ----------
   // Each body is drawn without a face; the shared face() adds eyes and mouth for the mood.
